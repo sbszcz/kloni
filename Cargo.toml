@@ -3,7 +3,6 @@ name = "kloni"
 version = "0.1.0"
 edition = "2021"
 
-
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -15,6 +14,7 @@ git2 = "0.16.1"
 toml = "0.4.2"
 anyhow = "1.0.68"
 thiserror = "1.0.38"
+openssl = "0.10.48"
 
 #[dev-dependencies]
 #assert_cmd = "2.0.7"

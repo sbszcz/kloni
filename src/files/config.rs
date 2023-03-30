@@ -12,17 +12,17 @@ use super::{
 };
 
 pub const CONFIG_DEFAULT: &str = r#"
-    context = "github"
+context = "github"
 
-    [github]
-    url = "https://git.acme-enterprise.org"
-    token = ""
+[github]
+base_url = "https://git.acme-enterprise.org"
+token = ""
 
-    [bitbucket]
-    url = "https://bitbucket.acme-enterprise.org"
-    user = ""
-    pass = ""
-    "#;
+[bitbucket]
+base_url = "https://bitbucket.acme-enterprise.org"
+user = ""
+pass = ""
+"#;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
