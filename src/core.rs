@@ -3,7 +3,6 @@ use std::{
     io::{BufRead, BufReader, Write},
 };
 
-use skim::AsAny;
 use thiserror::Error;
 
 use crate::files::{file_is_empty, get_or_create_cache_file};
@@ -52,7 +51,7 @@ pub trait FileProvider {
     }
 }
 
-pub trait CloneUrlProvider: FileProvider + HttpProvider {
+pub trait GitUrlProvider: FileProvider + HttpProvider {
     fn collect_clone_urls(&self) -> anyhow::Result<Vec<CloneUrl>> {
         let cache_file = &mut get_or_create_cache_file(self.name().to_string()).unwrap();
 

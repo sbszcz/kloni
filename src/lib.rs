@@ -9,11 +9,11 @@ use skim::{
     Skim, SkimItem,
 };
 
-use crate::core::{CloneUrl, CloneUrlProvider, KloniError};
+use crate::core::{CloneUrl, GitUrlProvider, KloniError};
 use crate::files::config::Config;
 use crate::github::Github;
 
-pub fn clone_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn CloneUrlProvider>> {
+pub fn git_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn GitUrlProvider>> {
     match &config.context {
         Some(context) if context == "github" => {
             // config struct has already been validated so we should be safe here (famous last words)
