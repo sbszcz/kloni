@@ -5,7 +5,7 @@ pub mod github;
 use std::io::Cursor;
 
 use skim::{
-    prelude::{SkimItemReader, SkimOptionsBuilder},
+    prelude::{SkimItemReader, SkimOptionsBuilder, Event},
     Skim, SkimItem,
 };
 
@@ -38,7 +38,7 @@ pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Ar
     let options = SkimOptionsBuilder::default()
         .height(Some("100%"))
         .multi(true)
-        .exact(true)
+        .exact(true)        
         .build()
         .unwrap();
 
@@ -49,6 +49,12 @@ pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Ar
 
     // `run_with` would read and show items from the stream
     Skim::run_with(&options, Some(items))
-        .map(|out| out.selected_items)
+        .map(|skim_out|         
+            match skim_out.final_event {
+                Event::EvActAccept(_) => skim_out.selected_items,
+                Event::EvActAbort => vec![],
+                _ => vec![]
+            }            
+        )
         .unwrap_or_else(Vec::new)
 }

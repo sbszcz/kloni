@@ -44,12 +44,11 @@ fn main() -> anyhow::Result<()> {
         if Path::new(folder_name).is_dir() {            
             println!("Could not clone selection. Folder '{}' already exists.", folder_name);
         } else {            
-            println!("Cloning {} into folder './{}'", &url, folder_name);
-            clone_into_folder(&url, folder_name)?;            
+            println!("Cloning {} into folder '{}'", &url, folder_name);
+            clone_into_folder(&url, folder_name)?;
+            println!("Done!");
         }
     }
-
-    println!("Done!");
 
     Ok(())
 }
