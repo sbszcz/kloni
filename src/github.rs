@@ -2,7 +2,7 @@ use attohttpc::{Method, RequestBuilder};
 use serde::{de::DeserializeOwned, Deserialize};
 use thiserror::Error;
 
-use crate::core::{CloneUrl, GitUrlProvider, FileProvider, HttpProvider};
+use crate::core::{CloneUrl, FileProvider, GitUrlProvider, HttpProvider};
 
 #[derive(Debug, Deserialize)]
 pub struct GithubRepo {
@@ -62,7 +62,7 @@ impl Github {
                 ssh_url,
             } in git_repos
             {
-                println!("{ssh_url}");
+                // println!("{ssh_url}");
                 git_urls.push(CloneUrl(ssh_url))
             }
         }
@@ -78,15 +78,18 @@ impl Github {
             .bearer_auth(token)
             .send()
             .map_err(|e| HttpProblem::RequestFailed(url.to_string(), e.to_string()))?;
-        
-        
+
         if !response.is_success() {
-            return Err(HttpProblem::RequestFailed(url.to_string(), format!("status: {}", response.status())).into());
+            return Err(HttpProblem::RequestFailed(
+                url.to_string(),
+                format!("status: {}", response.status()),
+            )
+            .into());
         }
 
-        let deserialized_result = response.json::<R>()
+        let deserialized_result = response
+            .json::<R>()
             .map_err(|e| HttpProblem::DeserializationFailed(url.to_string(), e.to_string()))?;
-
 
         Ok(deserialized_result)
     }
