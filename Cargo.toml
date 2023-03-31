@@ -9,13 +9,12 @@ serde_json = "1.0"
 attohttpc = { version = "0.24.0", features = ["json"]} 
 # clap = "4.0.29"
 skim = "0.10.2"
-directories = "4.0.1"
+directories = "5.0.0"
 git2 = "0.16.1"
-toml = "0.4.2"
+toml = "0.7.3"
 anyhow = "1.0.68"
 thiserror = "1.0.38"
 openssl = "0.10.48"
-time = "0.2.23"
 remove_dir_all = "0.8.0"
 
 #[dev-dependencies]
