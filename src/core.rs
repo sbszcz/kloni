@@ -7,7 +7,7 @@ use thiserror::Error;
 
 use crate::files::{file_is_empty, get_or_create_cache_file};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct CloneUrl(pub String);
 
 #[derive(Error, Debug)]

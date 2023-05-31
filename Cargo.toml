@@ -6,17 +6,18 @@ edition = "2021"
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-attohttpc = { version = "0.24.0", features = ["json"]} 
+attohttpc = { version = "0.25.0", features = ["json"]}
 # clap = "4.0.29"
 skim = "0.10.2"
 directories = "5.0.0"
-git2 = "0.16.1"
+git2 = "0.17.1"
 toml = "0.7.3"
 anyhow = "1.0.68"
 thiserror = "1.0.38"
 openssl = "0.10.48"
 remove_dir_all = "0.8.0"
+regex = "1.8.2"
+lazy_static = "1.4.0"
 
-#[dev-dependencies]
-#assert_cmd = "2.0.7"
-#httpmock = "0.6.7"
+[dev-dependencies]
+httpmock = "0.6.7"

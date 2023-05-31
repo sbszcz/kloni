@@ -8,6 +8,7 @@ use kloni::{
 };
 
 fn main() -> anyhow::Result<()> {
+
     let conf = Config::get(None)?;
 
     let github = git_url_provider_by_config(&conf)?;
@@ -29,6 +30,7 @@ fn main() -> anyhow::Result<()> {
             println!("Done!");
         }
     }
+
 
     Ok(())
 }
