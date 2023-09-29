@@ -20,8 +20,7 @@ token = ""
 
 [bitbucket]
 base_url = "https://bitbucket.acme-enterprise.org"
-user = ""
-pass = ""
+token = ""
 "#;
 
 #[derive(Deserialize, Debug)]
@@ -40,8 +39,7 @@ pub struct GithubConf {
 #[derive(Deserialize, Debug)]
 pub struct BitbucketConf {
     pub base_url: String,
-    pub user: String,
-    pub pass: String,
+    pub token: String,
 }
 
 #[derive(Error, Debug)]

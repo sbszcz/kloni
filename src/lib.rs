@@ -1,3 +1,4 @@
+pub mod bitbucket;
 pub mod core;
 pub mod files;
 pub mod github;
@@ -10,18 +11,30 @@ use skim::{
     Skim, SkimItem,
 };
 
+use crate::bitbucket::Bitbucket;
 use crate::core::{CloneUrl, GitUrlProvider, KloniError};
 use crate::files::config::Config;
 use crate::github::Github;
 
 pub fn git_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn GitUrlProvider>> {
-    match &config.context {
-        Some(context) if context == "github" => {
+    // let _bitbucket = Bitbucket::new("".to_string(), "".to_string());
+    //
+    match &config.context.as_deref() {
+        Some("github") => {
             // config struct has already been validated so we should be safe here (famous last words)
             let github_conf = config.github.as_ref().unwrap();
 
             let token = &github_conf.token;
-            let orgs_url = format!("{}/api/v3/user/orgs", &github_conf.base_url);
+            let orgs_url = format!("{}{}", &github_conf.base_url, github::USER_ORGS_PATH);
+
+            Ok(Box::new(Github::new(token.to_owned(), orgs_url)))
+        }
+        Some("bitbucket") => {
+            // config struct has already been validated so we should be safe here (famous last words)
+            let bitbucket_conf = config.bitbucket.as_ref().unwrap();
+
+            let token = &bitbucket_conf.token;
+            let orgs_url = format!("{}{}", &bitbucket_conf.base_url, bitbucket::USER_ORGS_PATH);
 
             Ok(Box::new(Github::new(token.to_owned(), orgs_url)))
         }

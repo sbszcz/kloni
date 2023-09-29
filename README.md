@@ -29,7 +29,8 @@ For now only Github Enterprise is supported. Bitbucket is already prepared but n
 
 # Todo
 
-* Obviously add some tests
+* ~~Obviously add some tests~~
+* Add some kind of build and test pipeline
 * Implement bitbucket support
 * Improve command line interface
   * `--help` argument

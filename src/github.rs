@@ -1,9 +1,9 @@
-use attohttpc::{Method, RequestBuilder};
 use attohttpc::header::HeaderMap;
+use attohttpc::{Method, RequestBuilder};
 use lazy_static::lazy_static;
-use serde::{Deserialize};
-use thiserror::Error;
 use regex::Regex;
+use serde::Deserialize;
+use thiserror::Error;
 
 use crate::core::{CloneUrl, FileProvider, GitUrlProvider, HttpProvider};
 
@@ -40,10 +40,11 @@ pub enum HttpProblem {
     DeserializationFailed(String, String),
 }
 
-
 lazy_static! {
     static ref NEXT_LINK_REGEX: Regex = Regex::new(r#"(?i)(http\S*\d+)>;\s+(rel="next")"#).unwrap();
 }
+
+pub const USER_ORGS_PATH: &str = "/api/v3/user/orgs";
 
 impl Github {
     pub fn new(token: String, orgs_url: String) -> Github {
@@ -51,7 +52,6 @@ impl Github {
     }
 
     pub fn fetch_clone_urls(&self) -> anyhow::Result<Vec<CloneUrl>> {
-
         let orgs = Self::get_all_organizations(&self.token, &self.orgs_url)?;
 
         let repo_urls: Vec<OrganizationRepoUrl> = orgs
@@ -80,11 +80,10 @@ impl Github {
     }
 
     pub fn get_all_organizations(token: &str, url: &str) -> anyhow::Result<Vec<Organization>> {
-
         let response = RequestBuilder::try_new(Method::GET, url)
             .map_err(|_e| HttpProblem::InvalidUrl(url.to_string()))?
             .danger_accept_invalid_certs(true)
-            .header("Accept", "application/vnd.github+json")
+            // .header("Accept", "application/vnd.github+json")
             .bearer_auth(token)
             .send()
             .map_err(|e| HttpProblem::RequestFailed(url.to_string(), e.to_string()))?;
@@ -105,19 +104,17 @@ impl Github {
     }
 
     pub fn get_all_repos(token: &str, url: &str) -> anyhow::Result<Vec<GithubRepo>> {
-
         let mut pages_remaining = true;
         let mut results = vec![];
         let mut request_url = url.to_string();
 
         while pages_remaining {
-
             // println!("calling: {request_url}");
 
             let response = RequestBuilder::try_new(Method::GET, &request_url)
                 .map_err(|_e| HttpProblem::InvalidUrl(request_url.to_string()))?
                 .danger_accept_invalid_certs(true)
-                .header("Accept", "application/vnd.github+json")
+                // .header("Accept", "application/vnd.github+json")
                 .bearer_auth(token)
                 .send()
                 .map_err(|e| HttpProblem::RequestFailed(request_url.to_string(), e.to_string()))?;
@@ -126,23 +123,23 @@ impl Github {
                 return Err(HttpProblem::RequestFailed(
                     request_url,
                     format!("status: {}", response.status()),
-                ).into());
+                )
+                .into());
             }
 
             pages_remaining = match Self::next_link(response.headers()) {
                 Some(next_link) => {
                     request_url = next_link;
                     true
-                },
-                None => false
+                }
+                None => false,
             };
 
             // println!("pages remaining: {pages_remaining}");
 
-            let deserialized_result = response
-                .json::<Vec<GithubRepo>>()
-                .map_err(|e| HttpProblem::DeserializationFailed(request_url.to_string(), e.to_string()))?;
-
+            let deserialized_result = response.json::<Vec<GithubRepo>>().map_err(|e| {
+                HttpProblem::DeserializationFailed(request_url.to_string(), e.to_string())
+            })?;
 
             results.extend(deserialized_result);
         }
@@ -150,12 +147,12 @@ impl Github {
         Ok(results)
     }
 
-    fn next_link(header_map: &HeaderMap) -> Option<String>{
+    fn next_link(header_map: &HeaderMap) -> Option<String> {
         if let Some(header_value) = header_map.get("Link") {
             if let Ok(value) = header_value.to_str() {
                 if let Some(captures) = NEXT_LINK_REGEX.captures(value) {
-                    if let Some(link) = captures.get(1){
-                        return Some(link.as_str().to_string())
+                    if let Some(link) = captures.get(1) {
+                        return Some(link.as_str().to_string());
                     }
                 }
             }
@@ -163,7 +160,6 @@ impl Github {
 
         None
     }
-
 }
 
 impl HttpProvider for Github {
@@ -181,17 +177,15 @@ impl FileProvider for Github {
 
 impl GitUrlProvider for Github {}
 
-
-
 #[cfg(test)]
 mod tests {
-    use anyhow::__private::kind::TraitKind;
-    use attohttpc::header::HeaderMap;
-    use crate::github::{Github, GithubRepo, HttpProblem};
 
+    use crate::github::Github;
+    use attohttpc::header::HeaderMap;
+
+    use crate::core::CloneUrl;
     use httpmock::prelude::*;
     use serde_json::json;
-    use crate::core::CloneUrl;
 
     #[test]
     pub fn should_successfully_extract_next_link_from_header() {
@@ -202,12 +196,17 @@ mod tests {
 
         let result = Github::next_link(&hm);
 
-        assert_eq!(result, Some("https://acme.company.com/api/v3/organizations/12729/repos?per_page=20&page=2".to_owned()));
+        assert_eq!(
+            result,
+            Some(
+                "https://acme.company.com/api/v3/organizations/12729/repos?per_page=20&page=2"
+                    .to_owned()
+            )
+        );
     }
 
     #[test]
     pub fn should_extract_nothing_if_link_header_is_missing() {
-
         let hm = HeaderMap::new();
         let result = Github::next_link(&hm);
 
@@ -216,7 +215,8 @@ mod tests {
 
     #[test]
     pub fn should_extract_nothing_if_regex_wont_match() {
-        let invalid_link_header_value = r#"(?i)<htions/12729/repos?per_page=20&page=4>; rel="last""#;
+        let invalid_link_header_value =
+            r#"(?i)<htions/12729/repos?per_page=20&page=4>; rel="last""#;
         let mut hm = HeaderMap::new();
         hm.insert("Link", invalid_link_header_value.parse().unwrap());
 
@@ -227,7 +227,6 @@ mod tests {
 
     #[test]
     pub fn should_fetch_all_cloneable_ssh_urls() {
-
         let server = MockServer::start();
         let address = server.address().to_string();
 
@@ -242,19 +241,21 @@ mod tests {
 
         // organization repos
         let user_organizations_mock = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(user_orgs_path);
             then.status(200)
                 .header("content-type", "application/json; charset=utf-8")
-                .body(json!(
-                    [
-                      {
-                        "repos_url": &foo_org_repos_url,
-                      }
-                    ]
-                ).to_string());
+                .body(
+                    json!(
+                        [
+                          {
+                            "repos_url": &foo_org_repos_url,
+                          }
+                        ]
+                    )
+                    .to_string(),
+                );
         });
 
         // repo list for org page 1
@@ -263,27 +264,28 @@ mod tests {
         let next_link = format!("<{foo_org_next_link_url}?per_page=20&page=2>; rel=\"next\", <{foo_org_next_link_url}?per_page=20&page=2>; rel=\"last\"");
 
         let organisation_repos_mock_page_1 = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(foo_org_repos_path);
             then.status(200)
                 .header("content-type", "application/json; charset=utf-8")
                 .header("Link", next_link)
-                .body(json!(
-                    [
-                      {
-                        "name": "fanzy-project",
-                        "full_name": "FOO_ORG/fanzy-project",
-                        "description": "A fanzy project",
-                        "ssh_url": "git@localhost:FOO_ORG/fanzy-project.git"
-                      }
-                    ]
-                ).to_string());
+                .body(
+                    json!(
+                        [
+                          {
+                            "name": "fanzy-project",
+                            "full_name": "FOO_ORG/fanzy-project",
+                            "description": "A fanzy project",
+                            "ssh_url": "git@localhost:FOO_ORG/fanzy-project.git"
+                          }
+                        ]
+                    )
+                    .to_string(),
+                );
         });
 
         let organisation_repos_mock_page_2 = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(foo_org_next_link_path)
@@ -292,16 +294,19 @@ mod tests {
 
             then.status(200)
                 .header("content-type", "application/json; charset=utf-8")
-                .body(json!(
-                    [
-                      {
-                        "name": "fanzy-project-2",
-                        "full_name": "FOO_ORG/fanzy-project-2",
-                        "description": "A second fanzy project",
-                        "ssh_url": "git@localhost:FOO_ORG/fanzy-project-2.git"
-                      }
-                    ]
-                ).to_string());
+                .body(
+                    json!(
+                        [
+                          {
+                            "name": "fanzy-project-2",
+                            "full_name": "FOO_ORG/fanzy-project-2",
+                            "description": "A second fanzy project",
+                            "ssh_url": "git@localhost:FOO_ORG/fanzy-project-2.git"
+                          }
+                        ]
+                    )
+                    .to_string(),
+                );
         });
 
         let github = Github::new("s3cr3t".to_string(), user_orgs_url);
@@ -313,12 +318,17 @@ mod tests {
 
         assert_eq!(&cloneable_urls.len(), &2);
         assert_eq!(
-            cloneable_urls.get(0), Some(&CloneUrl("git@localhost:FOO_ORG/fanzy-project.git".to_string()))
+            cloneable_urls.get(0),
+            Some(&CloneUrl(
+                "git@localhost:FOO_ORG/fanzy-project.git".to_string()
+            ))
         );
         assert_eq!(
-            cloneable_urls.get(1), Some(&CloneUrl("git@localhost:FOO_ORG/fanzy-project-2.git".to_string()))
+            cloneable_urls.get(1),
+            Some(&CloneUrl(
+                "git@localhost:FOO_ORG/fanzy-project-2.git".to_string()
+            ))
         );
-
     }
 
     #[test]
@@ -334,23 +344,24 @@ mod tests {
 
         // organization repos
         let user_organizations_mock = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(user_orgs_path);
             then.status(200)
                 .header("content-type", "application/json; charset=utf-8")
-                .body(json!(
-                    [
-                      {
-                        "repos_url": &foo_org_repos_url,
-                      }
-                    ]
-                ).to_string());
+                .body(
+                    json!(
+                        [
+                          {
+                            "repos_url": &foo_org_repos_url,
+                          }
+                        ]
+                    )
+                    .to_string(),
+                );
         });
 
         let organisation_repos_mock = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(foo_org_repos_path);
@@ -369,7 +380,6 @@ mod tests {
 
         let expected_error_message = format!("Can't deserialize response from '{foo_org_repos_url}': Json Error: invalid type: map, expected a sequence at line 1 column 1");
         assert_eq!(format!("{}", result.unwrap_err()), expected_error_message);
-
     }
 
     #[test]
@@ -384,7 +394,6 @@ mod tests {
 
         // organization repos
         let user_organizations_mock = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(user_orgs_path);
@@ -394,22 +403,24 @@ mod tests {
         });
 
         let organisation_repos_mock = server.mock(|when, then| {
-
             when.method("GET")
                 .header("Authorization", "Bearer s3cr3t")
                 .path(foo_org_repos_path);
             then.status(200)
                 .header("content-type", "application/json; charset=utf-8")
-                .body(json!(
-                    [
-                      {
-                        "name": "fanzy-project-2",
-                        "full_name": "FOO_ORG/fanzy-project-2",
-                        "description": "A second fanzy project",
-                        "ssh_url": "git@localhost:FOO_ORG/fanzy-project-2.git"
-                      }
-                    ]
-                ).to_string());
+                .body(
+                    json!(
+                        [
+                          {
+                            "name": "fanzy-project-2",
+                            "full_name": "FOO_ORG/fanzy-project-2",
+                            "description": "A second fanzy project",
+                            "ssh_url": "git@localhost:FOO_ORG/fanzy-project-2.git"
+                          }
+                        ]
+                    )
+                    .to_string(),
+                );
         });
 
         let github = Github::new("s3cr3t".to_string(), user_orgs_url.clone());
@@ -420,13 +431,15 @@ mod tests {
 
         assert!(result.is_err());
 
-        let expected_error_message = format!("Can't deserialize response from '{}': Json Error: expected ident at line 1 column 2", user_orgs_url);
+        let expected_error_message = format!(
+            "Can't deserialize response from '{}': Json Error: expected ident at line 1 column 2",
+            user_orgs_url
+        );
         assert_eq!(format!("{}", result.unwrap_err()), expected_error_message);
     }
 
     #[test]
     fn should_fail_when_url_is_invalid() {
-
         let github = Github::new("s3cr3t".to_string(), "bonkers".to_string());
         let result = github.fetch_clone_urls();
 
@@ -435,4 +448,3 @@ mod tests {
         assert_eq!(format!("{}", result.unwrap_err()), "Invalid url 'bonkers'");
     }
 }
-
