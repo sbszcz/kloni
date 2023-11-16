@@ -16,9 +16,7 @@ use crate::core::{CloneUrl, GitUrlProvider, KloniError};
 use crate::files::config::Config;
 use crate::github::Github;
 
-pub fn git_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn GitUrlProvider>> {
-    // let _bitbucket = Bitbucket::new("".to_string(), "".to_string());
-    //
+pub fn clone_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn GitUrlProvider>> {
     match &config.context.as_deref() {
         Some("github") => {
             // config struct has already been validated so we should be safe here (famous last words)
@@ -34,9 +32,14 @@ pub fn git_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn Git
             let bitbucket_conf = config.bitbucket.as_ref().unwrap();
 
             let token = &bitbucket_conf.token;
-            let orgs_url = format!("{}{}", &bitbucket_conf.base_url, bitbucket::USER_ORGS_PATH);
+            let orgs_url = format!(
+                "{}{}",
+                &bitbucket_conf.base_url,
+                bitbucket::USER_PROJECTS_URL
+            );
+            println!("provider is bitbucket with {orgs_url}");
 
-            Ok(Box::new(Github::new(token.to_owned(), orgs_url)))
+            Ok(Box::new(Bitbucket::new(token.to_owned(), orgs_url)))
         }
         _ => Err(KloniError::InvalidContext.into()),
     }

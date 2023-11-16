@@ -19,6 +19,18 @@ pub enum KloniError {
     MissingCacheFile(String),
 }
 
+#[derive(Error, Debug, PartialEq)]
+pub enum HttpProblem {
+    #[error("Invalid url '{0}'")]
+    InvalidUrl(String),
+
+    #[error("HTTP request to '{0}' failed: {1}")]
+    RequestFailed(String, String),
+
+    #[error("Can't deserialize response from '{0}': {1}")]
+    DeserializationFailed(String, String),
+}
+
 pub trait HttpProvider {
     fn request_from_remote(&self) -> anyhow::Result<Vec<CloneUrl>>;
 }

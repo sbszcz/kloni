@@ -3,12 +3,11 @@ use attohttpc::{Method, RequestBuilder};
 use lazy_static::lazy_static;
 use regex::Regex;
 use serde::Deserialize;
-use thiserror::Error;
 
-use crate::core::{CloneUrl, FileProvider, GitUrlProvider, HttpProvider};
+use crate::core::{CloneUrl, FileProvider, GitUrlProvider, HttpProblem, HttpProvider};
 
 #[derive(Debug, Deserialize)]
-pub struct GithubRepo {
+pub struct Repo {
     pub name: String,
     pub full_name: String,
     pub description: Option<String>,
@@ -26,18 +25,6 @@ pub struct OrganizationRepoUrl(pub String);
 pub struct Github {
     pub token: String,
     pub orgs_url: String,
-}
-
-#[derive(Error, Debug, PartialEq)]
-pub enum HttpProblem {
-    #[error("Invalid url '{0}'")]
-    InvalidUrl(String),
-
-    #[error("HTTP request to '{0}' failed: {1}")]
-    RequestFailed(String, String),
-
-    #[error("Can't deserialize response from '{0}': {1}")]
-    DeserializationFailed(String, String),
 }
 
 lazy_static! {
@@ -64,7 +51,7 @@ impl Github {
         for OrganizationRepoUrl(url) in repo_urls {
             let git_repos = Self::get_all_repos(&self.token, url.as_str())?;
 
-            for GithubRepo {
+            for Repo {
                 name: _,
                 full_name: _,
                 description: _,
@@ -103,7 +90,7 @@ impl Github {
         Ok(deserialized_result)
     }
 
-    pub fn get_all_repos(token: &str, url: &str) -> anyhow::Result<Vec<GithubRepo>> {
+    pub fn get_all_repos(token: &str, url: &str) -> anyhow::Result<Vec<Repo>> {
         let mut pages_remaining = true;
         let mut results = vec![];
         let mut request_url = url.to_string();
@@ -137,7 +124,7 @@ impl Github {
 
             // println!("pages remaining: {pages_remaining}");
 
-            let deserialized_result = response.json::<Vec<GithubRepo>>().map_err(|e| {
+            let deserialized_result = response.json::<Vec<Repo>>().map_err(|e| {
                 HttpProblem::DeserializationFailed(request_url.to_string(), e.to_string())
             })?;
 
