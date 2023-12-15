@@ -12,43 +12,50 @@ use skim::{
 };
 
 use crate::bitbucket::Bitbucket;
-use crate::core::{CloneUrl, GitUrlProvider, KloniError};
-use crate::files::config::Config;
+use crate::core::{CloneUrl, GitUrlProvider};
+use crate::files::config::{Config, Type};
 use crate::github::Github;
 
-pub fn clone_url_provider_by_config(config: &Config) -> anyhow::Result<Box<dyn GitUrlProvider>> {
-    match &config.context.as_deref() {
-        Some("github") => {
-            // config struct has already been validated so we should be safe here (famous last words)
-            let github_conf = config.github.as_ref().unwrap();
+pub fn clone_url_provider_by_config(
+    config: &Config,
+) -> anyhow::Result<Vec<Box<dyn GitUrlProvider>>> {
+    let results = config
+        .providers
+        .iter()
+        .filter_map(|provider| -> Option<Box<dyn GitUrlProvider>> {
+            let token = &provider.token;
+            let symbol = &provider.symbol;
 
-            let token = &github_conf.token;
-            let orgs_url = format!("{}{}", &github_conf.base_url, github::USER_ORGS_PATH);
+            match provider.provider {
+                Type::github => {
+                    let gh_base_url = format!("{}{}", &provider.base_url, github::USER_ORGS_PATH);
+                    Some(Box::new(Github::new(
+                        token.to_owned(),
+                        gh_base_url,
+                        symbol.to_owned(),
+                    )))
+                }
 
-            Ok(Box::new(Github::new(token.to_owned(), orgs_url)))
-        }
-        Some("bitbucket") => {
-            // config struct has already been validated so we should be safe here (famous last words)
-            let bitbucket_conf = config.bitbucket.as_ref().unwrap();
+                Type::bitbucket => {
+                    let bitbucket_base_url =
+                        format!("{}{}", &provider.base_url, bitbucket::USER_PROJECTS_PATH);
+                    Some(Box::new(Bitbucket::new(
+                        token.to_owned(),
+                        bitbucket_base_url,
+                        symbol.to_owned(),
+                    )))
+                }
+            }
+        })
+        .collect::<Vec<Box<dyn GitUrlProvider>>>();
 
-            let token = &bitbucket_conf.token;
-            let orgs_url = format!(
-                "{}{}",
-                &bitbucket_conf.base_url,
-                bitbucket::USER_PROJECTS_URL
-            );
-            println!("provider is bitbucket with {orgs_url}");
-
-            Ok(Box::new(Bitbucket::new(token.to_owned(), orgs_url)))
-        }
-        _ => Err(KloniError::InvalidContext.into()),
-    }
+    Ok(results)
 }
 
 pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Arc<dyn SkimItem>> {
     let urls = clone_urls
         .iter()
-        .map(|gurl| gurl.0.to_owned())
+        .map(|clone_url| format!("{} {}", clone_url.1, clone_url.0.to_owned()))
         .collect::<Vec<String>>()
         .join("\n");
 

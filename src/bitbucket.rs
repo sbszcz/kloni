@@ -55,19 +55,21 @@ pub struct Link {
 pub struct Bitbucket {
     pub token: String,
     pub projects_url: String,
+    pub symbol: Option<String>,
 }
 
-pub const USER_PROJECTS_URL: &str = "/rest/api/1.0/projects";
+pub const USER_PROJECTS_PATH: &str = "/rest/api/1.0/projects";
 
 impl Bitbucket {
-    pub fn new(token: String, projects_url: String) -> Bitbucket {
+    pub fn new(token: String, projects_url: String, symbol: Option<String>) -> Bitbucket {
         Bitbucket {
             token,
             projects_url,
+            symbol,
         }
     }
 
-    pub fn fetch_clone_urls(&self) -> anyhow::Result<Vec<CloneUrl>> {
+    pub fn fetch_clone_urls(&self, symbol: &str) -> anyhow::Result<Vec<CloneUrl>> {
         let project_list: Vec<Project> = Self::get_all_projects(&self.token, &self.projects_url)?;
 
         let mut git_urls = vec![];
@@ -100,8 +102,11 @@ impl Bitbucket {
                         })
                         .collect();
 
-                    println!("clone url {}", &ssh_links[0].href);
-                    git_urls.push(CloneUrl((&ssh_links[0].href).clone()))
+                    // println!("clone url {}", &ssh_links[0].href);
+                    git_urls.push(CloneUrl(
+                        (&ssh_links[0].href).to_owned(),
+                        symbol.to_string(),
+                    ))
                 }
             }
         }
@@ -159,7 +164,7 @@ impl Bitbucket {
         let repos_base_url = project_url.to_string() + "/repos";
         let mut request_url = repos_base_url.clone();
 
-        println!("get all repos from {request_url}");
+        // println!("get all repos from {request_url}");
         while pages_remaining {
             let response = RequestBuilder::try_new(Method::GET, &request_url)
                 .map_err(|_e| HttpProblem::InvalidUrl(request_url.clone()))?
@@ -198,8 +203,8 @@ impl Bitbucket {
 }
 
 impl HttpProvider for Bitbucket {
-    fn request_from_remote(&self) -> anyhow::Result<Vec<CloneUrl>> {
-        let result = self.fetch_clone_urls()?;
+    fn request_from_remote(&self, symbol: &str) -> anyhow::Result<Vec<CloneUrl>> {
+        let result = self.fetch_clone_urls(symbol)?;
         Ok(result)
     }
 }
@@ -210,4 +215,8 @@ impl FileProvider for Bitbucket {
     }
 }
 
-impl GitUrlProvider for Bitbucket {}
+impl GitUrlProvider for Bitbucket {
+    fn symbol(&self) -> String {
+        self.symbol.to_owned().unwrap_or("".to_string())
+    }
+}

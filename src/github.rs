@@ -25,6 +25,7 @@ pub struct OrganizationRepoUrl(pub String);
 pub struct Github {
     pub token: String,
     pub orgs_url: String,
+    pub symbol: Option<String>,
 }
 
 lazy_static! {
@@ -34,11 +35,15 @@ lazy_static! {
 pub const USER_ORGS_PATH: &str = "/api/v3/user/orgs";
 
 impl Github {
-    pub fn new(token: String, orgs_url: String) -> Github {
-        Github { token, orgs_url }
+    pub fn new(token: String, orgs_url: String, symbol: Option<String>) -> Github {
+        Github {
+            token,
+            orgs_url,
+            symbol,
+        }
     }
 
-    pub fn fetch_clone_urls(&self) -> anyhow::Result<Vec<CloneUrl>> {
+    pub fn fetch_clone_urls(&self, symbol: &str) -> anyhow::Result<Vec<CloneUrl>> {
         let orgs = Self::get_all_organizations(&self.token, &self.orgs_url)?;
 
         let repo_urls: Vec<OrganizationRepoUrl> = orgs
@@ -59,7 +64,7 @@ impl Github {
             } in git_repos
             {
                 // println!("{ssh_url}");
-                git_urls.push(CloneUrl(ssh_url))
+                git_urls.push(CloneUrl(ssh_url, symbol.to_string()))
             }
         }
 
@@ -150,8 +155,8 @@ impl Github {
 }
 
 impl HttpProvider for Github {
-    fn request_from_remote(&self) -> anyhow::Result<Vec<CloneUrl>> {
-        let result = self.fetch_clone_urls()?;
+    fn request_from_remote(&self, symbol: &str) -> anyhow::Result<Vec<CloneUrl>> {
+        let result = self.fetch_clone_urls(symbol)?;
         Ok(result)
     }
 }
@@ -162,7 +167,11 @@ impl FileProvider for Github {
     }
 }
 
-impl GitUrlProvider for Github {}
+impl GitUrlProvider for Github {
+    fn symbol(&self) -> String {
+        self.symbol.to_owned().unwrap_or("".to_string())
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -296,8 +305,8 @@ mod tests {
                 );
         });
 
-        let github = Github::new("s3cr3t".to_string(), user_orgs_url);
-        let cloneable_urls = github.fetch_clone_urls().unwrap();
+        let github = Github::new("s3cr3t".to_string(), user_orgs_url, None);
+        let cloneable_urls = github.fetch_clone_urls("").unwrap();
 
         user_organizations_mock.assert();
         organisation_repos_mock_page_1.assert();
@@ -307,13 +316,15 @@ mod tests {
         assert_eq!(
             cloneable_urls.get(0),
             Some(&CloneUrl(
-                "git@localhost:FOO_ORG/fanzy-project.git".to_string()
+                "git@localhost:FOO_ORG/fanzy-project.git".to_string(),
+                "".to_string()
             ))
         );
         assert_eq!(
             cloneable_urls.get(1),
             Some(&CloneUrl(
-                "git@localhost:FOO_ORG/fanzy-project-2.git".to_string()
+                "git@localhost:FOO_ORG/fanzy-project-2.git".to_string(),
+                "".to_string()
             ))
         );
     }
@@ -357,8 +368,8 @@ mod tests {
                 .body("{");
         });
 
-        let github = Github::new("s3cr3t".to_string(), user_orgs_url);
-        let result = github.fetch_clone_urls();
+        let github = Github::new("s3cr3t".to_string(), user_orgs_url, None);
+        let result = github.fetch_clone_urls("");
 
         user_organizations_mock.assert();
         organisation_repos_mock.assert();
@@ -410,8 +421,8 @@ mod tests {
                 );
         });
 
-        let github = Github::new("s3cr3t".to_string(), user_orgs_url.clone());
-        let result = github.fetch_clone_urls();
+        let github = Github::new("s3cr3t".to_string(), user_orgs_url.clone(), None);
+        let result = github.fetch_clone_urls("");
 
         user_organizations_mock.assert();
         organisation_repos_mock.assert_hits(0);
@@ -427,8 +438,8 @@ mod tests {
 
     #[test]
     fn should_fail_when_url_is_invalid() {
-        let github = Github::new("s3cr3t".to_string(), "bonkers".to_string());
-        let result = github.fetch_clone_urls();
+        let github = Github::new("s3cr3t".to_string(), "bonkers".to_string(), None);
+        let result = github.fetch_clone_urls("");
 
         assert!(result.is_err());
 

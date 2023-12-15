@@ -8,7 +8,7 @@ use thiserror::Error;
 use crate::files::{file_is_empty, get_or_create_cache_file};
 
 #[derive(Debug, PartialEq)]
-pub struct CloneUrl(pub String);
+pub struct CloneUrl(pub String, pub String);
 
 #[derive(Error, Debug)]
 pub enum KloniError {
@@ -32,19 +32,19 @@ pub enum HttpProblem {
 }
 
 pub trait HttpProvider {
-    fn request_from_remote(&self) -> anyhow::Result<Vec<CloneUrl>>;
+    fn request_from_remote(&self, symbol: &str) -> anyhow::Result<Vec<CloneUrl>>;
 }
 
 pub trait FileProvider {
     fn name(&self) -> &str;
 
-    fn load_from_file(&self, cache_file: &File) -> anyhow::Result<Vec<CloneUrl>> {
+    fn load_from_file(&self, cache_file: &File, symbol: &str) -> anyhow::Result<Vec<CloneUrl>> {
         let buffered = BufReader::new(cache_file);
 
         let mut clone_urls = vec![];
 
         for line in buffered.lines() {
-            clone_urls.push(CloneUrl(line.unwrap()))
+            clone_urls.push(CloneUrl(line.unwrap(), symbol.to_string()))
         }
 
         Ok(clone_urls)
@@ -64,6 +64,8 @@ pub trait FileProvider {
 }
 
 pub trait GitUrlProvider: FileProvider + HttpProvider {
+    fn symbol(&self) -> String;
+
     fn collect_clone_urls(&self) -> anyhow::Result<Vec<CloneUrl>> {
         let cache_file = &mut get_or_create_cache_file(self.name().to_string()).unwrap();
 
@@ -72,12 +74,12 @@ pub trait GitUrlProvider: FileProvider + HttpProvider {
         let clone_urls = match cache_file_is_empty {
             true => {
                 // println!("cache file is empty");
-                let clone_urls = self.request_from_remote()?;
+                let clone_urls = self.request_from_remote(&self.symbol())?;
                 self.update_file(&clone_urls, cache_file)?;
                 clone_urls
             }
             false => {
-                let urls = self.load_from_file(cache_file)?;
+                let urls = self.load_from_file(cache_file, &self.symbol())?;
                 // println!("cache file contains {} urls", urls.len());
                 urls
             }

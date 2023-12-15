@@ -12,34 +12,50 @@ use super::{
 };
 
 pub const CONFIG_DEFAULT: &str = r#"
-context = "github"
-
-[github]
+[[providers]]
+provider = "github"
 base_url = "https://git.acme-enterprise.org"
-token = ""
+token = "s3cr3t"
+symbol = "GH"
 
-[bitbucket]
+[[providers]]
+provider = "bitbucket"
 base_url = "https://bitbucket.acme-enterprise.org"
-token = ""
+token = "s3cr3t"
+symbol = "BB"
 "#;
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    pub context: Option<String>,
-    pub github: Option<GithubConf>,
-    pub bitbucket: Option<BitbucketConf>,
+    pub providers: Vec<Provider>,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Provider {
+    pub provider: Type,
+    pub base_url: String,
+    pub token: String,
+    pub symbol: Option<String>,
+}
+
+#[derive(Deserialize, Debug)]
+pub enum Type {
+    github,
+    bitbucket,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct GithubConf {
     pub base_url: String,
     pub token: String,
+    pub icon: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
 pub struct BitbucketConf {
     pub base_url: String,
     pub token: String,
+    pub icon: Option<String>,
 }
 
 #[derive(Error, Debug)]
@@ -66,7 +82,7 @@ impl Config {
     }
 
     fn validate_config(config: &Config, conf_file: &Path) -> anyhow::Result<()> {
-        if config.bitbucket.is_none() && config.github.is_none() && config.context.is_none() {
+        if config.providers.is_empty() {
             return Err(ConfigError::FirstRun(conf_file.to_path_buf()).into());
         }
 
