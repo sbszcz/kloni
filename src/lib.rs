@@ -55,7 +55,13 @@ pub fn clone_url_provider_by_config(
 pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Arc<dyn SkimItem>> {
     let urls = clone_urls
         .iter()
-        .map(|clone_url| format!("{} {}", clone_url.1, clone_url.0.to_owned()))
+        .map(|clone_url| {
+            if clone_url.1.len() > 0 {
+                format!("{} | {}", clone_url.1, clone_url.0.to_owned())
+            } else {
+                format!("{}", clone_url.0.to_owned())
+            }
+        })
         .collect::<Vec<String>>()
         .join("\n");
 
@@ -81,7 +87,7 @@ pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Ar
         .unwrap_or_else(Vec::new)
 }
 
-pub fn folder_name_for_url(url: &String) -> &str {
+pub fn folder_name_for_url(url: &str) -> &str {
     let parts = url.split("/");
     let collection = parts.collect::<Vec<&str>>();
     let git_folder_name = collection.last().unwrap();
@@ -102,4 +108,34 @@ pub fn clone_into_folder(git_url: &str, destination_folder: &str) -> anyhow::Res
     builder.clone(git_url, Path::new(destination_folder))?;
 
     Ok(())
+}
+
+pub fn remove_symbol_prefix(url: &str) -> &str {
+    match url.find("|") {
+        Some(idx) => &url[idx + 2..],
+        None => &url,
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::remove_symbol_prefix;
+
+    #[test]
+    pub fn should_successfully_remove_symbol_from_url() {
+        assert_eq!(
+            "git@git.acmecorp.com:organization/example.git",
+            remove_symbol_prefix("󰊤 | git@git.acmecorp.com:organization/example.git")
+        );
+
+        assert_eq!(
+            "git@git.acmecorp.com:organization/example.git",
+            remove_symbol_prefix("  foo bar   | git@git.acmecorp.com:organization/example.git")
+        );
+
+        assert_eq!(
+            "git@git.acmecorp.com:organization/example.git",
+            remove_symbol_prefix("git@git.acmecorp.com:organization/example.git")
+        )
+    }
 }
