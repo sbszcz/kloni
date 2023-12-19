@@ -22,7 +22,7 @@ For now only Github Enterprise and Bitbucket is supported.
 # Usage
 
 1. Ensure your ssh-agent is running and your private key is added!
-1. Run `kloni` without arguments. The first execution will fail and ask you to provide Github Enterprise connection information (url, [personal access token](https://docs.github.com/de/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)) via the generated `~/.config/kloni/config.toml`.
+1. Run `kloni` without arguments. The first execution will fail and ask you to provide Github Enterprise/Bitbucket connection information (url, [personal access token](https://docs.github.com/de/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token)) via the generated `~/.config/kloni/config.toml`.
 1. `kloni` uses [skim](https://github.com/lotabout/skim) as fuzzy finder library. You can use the `tab` key to select multiple repos at once to clone them within one run.
 1. `kloni` caches all repos found in `~/.cache/kloni/github` and won't issue further http requests as long as this file exists. For updating your repo list you have to delete this file manually.
 

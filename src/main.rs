@@ -11,11 +11,9 @@ fn main() -> anyhow::Result<()> {
     let conf = Config::get(None)?;
     let providers = clone_url_provider_by_config(&conf)?;
 
-    let mut symbols: Vec<String> = vec![];
     let mut selectable_repos: Vec<CloneUrl> = vec![];
 
     for provider in providers {
-        symbols.push(provider.symbol());
         let clone_urls = provider.collect_clone_urls()?;
         selectable_repos.extend(clone_urls)
     }
