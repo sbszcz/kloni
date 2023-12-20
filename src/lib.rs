@@ -56,10 +56,10 @@ pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Ar
     let urls = clone_urls
         .iter()
         .map(|clone_url| {
-            if clone_url.1.len() > 0 {
+            if !clone_url.1.is_empty() {
                 format!("{} | {}", clone_url.1, clone_url.0.to_owned())
             } else {
-                format!("{}", clone_url.0.to_owned())
+                clone_url.0.to_owned().to_string()
             }
         })
         .collect::<Vec<String>>()
@@ -84,11 +84,11 @@ pub fn run_selector_for_git_urls(clone_urls: Vec<CloneUrl>) -> Vec<std::sync::Ar
             Event::EvActAbort => vec![],
             _ => vec![],
         })
-        .unwrap_or_else(Vec::new)
+        .unwrap_or_default()
 }
 
 pub fn folder_name_for_url(url: &str) -> &str {
-    let parts = url.split("/");
+    let parts = url.split('/');
     let collection = parts.collect::<Vec<&str>>();
     let git_folder_name = collection.last().unwrap();
 
@@ -111,9 +111,9 @@ pub fn clone_into_folder(git_url: &str, destination_folder: &str) -> anyhow::Res
 }
 
 pub fn remove_symbol_prefix(url: &str) -> &str {
-    match url.find("|") {
+    match url.find('|') {
         Some(idx) => &url[idx + 2..],
-        None => &url,
+        None => url,
     }
 }
 

@@ -82,8 +82,8 @@ impl Bitbucket {
         } in project_list.iter()
         {
             let mut project_url = self.projects_url.clone();
-            project_url.push_str("/");
-            project_url.push_str(&key);
+            project_url.push('/');
+            project_url.push_str(key);
 
             let git_repos = Self::get_all_repos(&self.token, &project_url)?;
 
@@ -104,7 +104,7 @@ impl Bitbucket {
 
                     // println!("clone url {}", &ssh_links[0].href);
                     git_urls.push(CloneUrl(
-                        (&ssh_links[0].href).to_owned(),
+                        ssh_links[0].href.to_owned(),
                         symbol.to_string(),
                     ))
                 }
@@ -143,11 +143,11 @@ impl Bitbucket {
 
             // dbg!(&deserialized_result);
 
-            pages_remaining = deserialized_result.is_last_page != true;
+            pages_remaining = !deserialized_result.is_last_page;
             if pages_remaining && deserialized_result.next_page_start.is_some() {
                 request_url = format!(
                     "{}?start={}",
-                    url.to_string(),
+                    url,
                     deserialized_result.next_page_start.unwrap()
                 )
             }
@@ -187,7 +187,7 @@ impl Bitbucket {
 
             // dbg!(&deserialized_result);
 
-            pages_remaining = deserialized_result.is_last_page != true;
+            pages_remaining = !deserialized_result.is_last_page;
             if pages_remaining && deserialized_result.next_page_start.is_some() {
                 request_url = format!(
                     "{}?start={}",

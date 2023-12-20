@@ -34,7 +34,7 @@ fn main() -> anyhow::Result<()> {
             );
         } else {
             println!("Cloning {} into folder '{}'", &url, folder_name);
-            clone_into_folder(&url, folder_name)?;
+            clone_into_folder(url, folder_name)?;
             println!("Done!");
         }
     }

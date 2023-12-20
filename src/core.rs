@@ -73,7 +73,6 @@ pub trait GitUrlProvider: FileProvider + HttpProvider {
 
         let clone_urls = match cache_file_is_empty {
             true => {
-                // println!("cache file is empty");
                 println!(
                     "Collecting repo clone urls for '{}' from remote!",
                     self.name()
@@ -82,11 +81,7 @@ pub trait GitUrlProvider: FileProvider + HttpProvider {
                 self.update_file(&clone_urls, cache_file)?;
                 clone_urls
             }
-            false => {
-                let urls = self.load_from_file(cache_file, &self.symbol())?;
-                // println!("cache file contains {} urls", urls.len());
-                urls
-            }
+            false => self.load_from_file(cache_file, &self.symbol())?,
         };
 
         Ok(clone_urls)
