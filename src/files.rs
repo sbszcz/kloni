@@ -21,7 +21,7 @@ fn project_dirs() -> anyhow::Result<ProjectDirs> {
     Ok(dirs)
 }
 
-pub enum ConfigFileStatus {
+enum ConfigFileStatus {
     Created(PathBuf),
     Existing(PathBuf),
 }
@@ -44,7 +44,7 @@ pub fn get_or_create_config_file(default_content: &str) -> anyhow::Result<Config
                 .create(true) // creates en empty file, if not exist
                 .open(&config_toml_path)?;
 
-            write!(conf_file, "{}", default_content);
+            write!(conf_file, "{}", default_content)?;
 
             Ok(ConfigFileStatus::Created(config_toml_path))
         }
